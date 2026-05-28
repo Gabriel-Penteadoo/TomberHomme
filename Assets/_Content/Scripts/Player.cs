@@ -21,6 +21,12 @@ public class Player : MonoBehaviour
     [System.Serializable]
     public class Settings
     {
+        [Header("Dive")]
+        public float DiveForwardForce = 12f;
+        public float DiveDownForce = 8f;
+        public float DiveGroundForce = 10f;
+        public float DiveDuration = 0.6f;
+        
         [Header("Movements")]
 
         [Tooltip("Movement speed in km/h")]
@@ -82,7 +88,7 @@ public class Player : MonoBehaviour
     [SerializeField] private Settings _settings;
     [SerializeField] private References _references;
     [SerializeField, ReadOnly] private StateContainer _state;
-
+    
     public StateContainer State => _state;
 
     #region Constants
@@ -108,6 +114,10 @@ public class Player : MonoBehaviour
     private Vector3 _lastPlatformPosition;
     private Quaternion _lastPlatformRotation;
     private Vector3 _platformVelocity;
+    
+    //Dive
+    private InputAction _diveAction;
+    private float _diveTimer = 0f;
     #endregion
 
     #region Unity Lifecycle
@@ -119,6 +129,7 @@ public class Player : MonoBehaviour
         // Inputs
         _moveAction = _references.InputActions.FindActionMap("Player").FindAction("Move");
         _jumpAction = _references.InputActions.FindActionMap("Player").FindAction("Jump");
+        _diveAction = _references.InputActions.FindActionMap("Player").FindAction("Interact");
 
         // Camera
         _camera = Camera.main;
@@ -134,12 +145,14 @@ public class Player : MonoBehaviour
     {
         _moveAction?.Enable();
         _jumpAction?.Enable();
+        _diveAction?.Enable();
     }
 
     void OnDisable()
     {
         _moveAction?.Disable();
         _jumpAction?.Disable();
+        _diveAction?.Disable();
     }
 
     void Update()
@@ -152,6 +165,7 @@ public class Player : MonoBehaviour
         SetJump();
         SetMovement(t);
         SetState();
+        SetDive();
     }
     #endregion
 
@@ -258,6 +272,7 @@ public class Player : MonoBehaviour
 
     private void SetVelocity(float deltaTime)
     {
+        if (_diveTimer > 0) return;
         Vector2 input = _moveAction.ReadValue<Vector2>();
 
         float speed = _settings.Speed * KMH_TO_MS;
@@ -287,6 +302,67 @@ public class Player : MonoBehaviour
         }
     }
 
+    [ContextMenu("Jumper")]
+    public void Jumper(float force)
+    {
+        _state.Velocity.y = force;
+    }
+
+    private void SetDive()
+    {
+        if (_diveTimer > 0)
+        {
+            _diveTimer -= Time.deltaTime;
+            
+            transform.rotation = Quaternion.Lerp(
+                transform.rotation,
+                Quaternion.Euler(90, transform.eulerAngles.y, 0),
+                Time.deltaTime * 15f
+            );
+            
+            return;
+        }
+        transform.rotation = Quaternion.Lerp(
+            transform.rotation,
+            Quaternion.Euler(0, transform.eulerAngles.y, 0),
+            Time.deltaTime * 10f
+        );
+
+        if (_diveAction.triggered)
+        {
+            _diveTimer = _settings.DiveDuration;
+
+            Vector3 forward = transform.forward;
+
+            if (_state.IsGrounded)
+            {
+                _state.Velocity.x = forward.x * _settings.DiveGroundForce;
+                _state.Velocity.z = forward.z * _settings.DiveGroundForce;
+                _state.Velocity.y = 0;
+            }
+            else
+            {
+                _state.Velocity.x = forward.x * _settings.DiveForwardForce;
+                _state.Velocity.z = forward.z * _settings.DiveForwardForce;
+                _state.Velocity.y = -_settings.DiveDownForce;
+            }
+        }
+    }
+    
+    [ContextMenu("Dive")]
+    public void Dive()
+    {
+        transform.rotation = Quaternion.Lerp(
+            transform.rotation,
+            Quaternion.Euler(0, transform.eulerAngles.y, 0),
+            Time.deltaTime * 10f
+        );
+        Vector3 forward = transform.forward;
+        
+        _state.Velocity.x = forward.x * _settings.DiveGroundForce;
+        _state.Velocity.z = forward.z * _settings.DiveGroundForce;
+    }
+
     private void SetMovement(float deltaTime)
     {
         Vector3 motion = _state.Velocity + _platformVelocity;
@@ -294,6 +370,12 @@ public class Player : MonoBehaviour
     }
     private void SetState()
     {
+        if (_diveTimer > 0)
+        {
+            State.CurrentState = PlayerState.Falling;
+            return;
+        }
+        
         if (State.IsGrounded)
         {
             if (State.HorizontalVelocity.sqrMagnitude > .1f)
@@ -304,6 +386,7 @@ public class Player : MonoBehaviour
             {
                 State.CurrentState = PlayerState.Idle;
             }
+            
         }
         else
         {
