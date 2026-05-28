@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -43,27 +44,29 @@ public class PlayerCamera : MonoBehaviour
         public Transform Target;
     }
 
-    [SerializeField] private Settings _settings;
-    [SerializeField] private References _references;
+    [SerializeField]
+    private Settings _settings;
+
+    [SerializeField]
+    private References _references;
 
     private float _yaw;
     private float _pitch;
 
     private Vector3 _playerPosition;
     private InputAction _lookAction;
-    
-    void Awake()
+
+
+    private void Awake()
     {
         _lookAction = _references.InputActions.FindActionMap("Player").FindAction("Look");
     }
-    
+
     void OnEnable()
     {
         _lookAction?.Enable();
-        
         _playerPosition = _references.Target.position;
         _pitch = _settings.DefaultPitch;
-        
     }
 
     void OnDisable()
@@ -82,20 +85,17 @@ public class PlayerCamera : MonoBehaviour
 
     private void SetCursor()
     {
-        if (!Application.isPlaying)
+        if(!Application.isPlaying) 
             return;
-
+        
         bool lockCursor = !Player.Instance.State.IsPaused;
-
         Cursor.lockState = lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
-        Cursor.visible = !lockCursor;
     }
 
     private void SetYawAndPitch(float deltaTime)
     {
         if (Player.Instance && Player.Instance.State.IsPaused)
             return;
-        
         
         Vector2 lookInput = _lookAction?.ReadValue<Vector2>() ?? Vector2.zero;
 
@@ -105,19 +105,20 @@ public class PlayerCamera : MonoBehaviour
         _yaw += lookInput.x * _settings.LookSensitivity * deltaTime;
     }
 
+
     private void SetPosition(float deltaTime)
     {
         float t = (1.1f - _settings.FollowSmoothness) * 20 * deltaTime;
         _playerPosition = Vector3.Lerp(_playerPosition, _references.Target.position, t);
-
+        
         Vector3 camPos = Vector3.back * _settings.Distance;
-        camPos = Quaternion.Euler(_pitch, _yaw, 0) * camPos;
+        camPos = Quaternion.Euler(_pitch,  _yaw, 0) * camPos;
         camPos += _playerPosition;
-
+        
         Quaternion camRot = Quaternion.LookRotation(_playerPosition - camPos);
-
+        
         camPos.y += _settings.VerticalOffset;
-
+        
         transform.position = camPos;
         transform.rotation = camRot;
     }

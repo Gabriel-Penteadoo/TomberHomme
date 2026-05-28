@@ -15,20 +15,26 @@ public class RocketExplosion : MonoBehaviour
         public float Radius = 5;
     }
 
-    [SerializeField] private Settings _settings;
     [SerializeField] private References _references;
+    [SerializeField] private Settings _settings;
+
+    private float radius;
+    private float time;
 
     void Awake()
     {
-        _references.Collider.radius = 0;
+        radius = 1;
         _references.Explosion.Play();
     }
 
     void Update()
     {
-        _references.Collider.radius += Time.deltaTime * 50;
+        radius += Time.deltaTime * 15;
+        _references.Collider.radius = radius <= _settings.Radius ? radius : 0;
 
-        if (_references.Collider.radius > _settings.Radius)
+        // Destroy after 5 seconds
+        time += Time.deltaTime;
+        if (time > 5)
         {
             Destroy(gameObject);
         }

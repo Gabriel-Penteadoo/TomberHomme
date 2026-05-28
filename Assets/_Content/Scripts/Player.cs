@@ -259,26 +259,24 @@ public class Player : MonoBehaviour
     private void SetVelocity(float deltaTime)
     {
         Vector2 input = _moveAction.ReadValue<Vector2>();
-        
+
         float speed = _settings.Speed * KMH_TO_MS;
-        
-        Vector3 moveInput = new Vector3(input.x, 0, input.y); // Convert input 2D to 3D
+
+        Vector3 moveInput = new Vector3(input.x, 0, input.y);
         moveInput = Quaternion.Euler(0, _camera.transform.eulerAngles.y, 0) * moveInput;
-        moveInput *= speed; // Multiply vector by speed
-            
+        moveInput *= speed;
+
         _state.Velocity.x = moveInput.x;
         _state.Velocity.z = moveInput.z;
         
-        // Rotate Player
-        if (moveInput.sqrMagnitude > 0.001f)
+        //Rotate Player
+        if (moveInput.magnitude > 0.001f)
         {
-            Quaternion targetRot =  Quaternion.LookRotation(moveInput);
+            Quaternion targetRot = Quaternion.LookRotation(moveInput);
             float t = _settings.RotationSpeed * deltaTime;
             Vector3 euler = Quaternion.Slerp(transform.rotation, targetRot, t).eulerAngles;
-            
             transform.rotation = Quaternion.Euler(0, euler.y, 0);
         }
-        
     }
 
     private void SetJump()
@@ -286,20 +284,17 @@ public class Player : MonoBehaviour
         if (_jumpAction.triggered && _state.IsGrounded)
         {
             _state.Velocity.y = _settings.JumpForce;
-            _state.Ground = null;
         }
     }
 
     private void SetMovement(float deltaTime)
     {
         Vector3 motion = _state.Velocity + _platformVelocity;
-        
         _references.Controller.Move(motion * deltaTime);
     }
-
     private void SetState()
     {
-        if (_state.IsGrounded)
+        if (State.IsGrounded)
         {
             if (State.HorizontalVelocity.sqrMagnitude > .1f)
             {
