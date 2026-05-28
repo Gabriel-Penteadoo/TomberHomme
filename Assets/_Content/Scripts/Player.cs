@@ -118,6 +118,9 @@ public class Player : MonoBehaviour
     //Dive
     private InputAction _diveAction;
     private float _diveTimer = 0f;
+    private bool _isDivingOnPad = false;
+    private Vector3 _padForward;
+    private Vector3 _padVelocity;
     #endregion
 
     #region Unity Lifecycle
@@ -165,7 +168,7 @@ public class Player : MonoBehaviour
         SetJump();
         SetMovement(t);
         SetState();
-        SetDive();
+        SetDive(t);
     }
     #endregion
 
@@ -307,17 +310,51 @@ public class Player : MonoBehaviour
     {
         _state.Velocity.y = force;
     }
-
-    private void SetDive()
+    
+    public void StartPadDive()
     {
+        _isDivingOnPad = true;
+    }
+
+    public void StopPadDive()
+    {
+        _isDivingOnPad = false;
+    }
+    private void SetDive(float deltaTime)
+    {
+
+        if (_isDivingOnPad)
+        {
+            // Sauvegarder la direction une seule fois au début
+            if (_padForward == Vector3.zero)
+                _padForward = new Vector3(transform.forward.x, 0, transform.forward.z).normalized;
+
+            // Rotation couchée
+            float currentY = Mathf.Atan2(transform.forward.x, transform.forward.z) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Lerp(
+                transform.rotation,
+                Quaternion.Euler(90, currentY, 0),
+                Time.deltaTime * 15f
+            );
+
+            // Forcer la vélocité dans SetMovement via un champ dédié
+            _padVelocity = _padForward * _settings.DiveGroundForce;
+
+            _diveTimer = 0;
+            return;
+        }
+
+        _padForward = Vector3.zero;
+        _padVelocity = Vector3.zero;
+
         if (_diveTimer > 0)
         {
-            _diveTimer -= Time.deltaTime;
+            _diveTimer -= deltaTime;
             
             transform.rotation = Quaternion.Lerp(
                 transform.rotation,
                 Quaternion.Euler(90, transform.eulerAngles.y, 0),
-                Time.deltaTime * 15f
+                deltaTime * 15f
             );
             
             return;
@@ -325,7 +362,7 @@ public class Player : MonoBehaviour
         transform.rotation = Quaternion.Lerp(
             transform.rotation,
             Quaternion.Euler(0, transform.eulerAngles.y, 0),
-            Time.deltaTime * 10f
+            deltaTime * 10f
         );
 
         if (_diveAction.triggered)
@@ -349,23 +386,10 @@ public class Player : MonoBehaviour
         }
     }
     
-    [ContextMenu("Dive")]
-    public void Dive()
-    {
-        transform.rotation = Quaternion.Lerp(
-            transform.rotation,
-            Quaternion.Euler(0, transform.eulerAngles.y, 0),
-            Time.deltaTime * 10f
-        );
-        Vector3 forward = transform.forward;
-        
-        _state.Velocity.x = forward.x * _settings.DiveGroundForce;
-        _state.Velocity.z = forward.z * _settings.DiveGroundForce;
-    }
 
     private void SetMovement(float deltaTime)
     {
-        Vector3 motion = _state.Velocity + _platformVelocity;
+        Vector3 motion = _state.Velocity + _platformVelocity + _padVelocity; // ← ajoute _padVelocity
         _references.Controller.Move(motion * deltaTime);
     }
     private void SetState()
