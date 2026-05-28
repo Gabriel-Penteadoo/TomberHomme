@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Content/Scenes/New Scene.unity
     guid: 0c5b28355c76ccb2996efe56c30dd8f6
+  - enabled: 1
+    path: Assets/_Content/Scenes/PlatformerScene.unity
+    guid: f3f299a184b907d4c932b099c2b46394
   - enabled: 0
     path: Assets/_Content/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
