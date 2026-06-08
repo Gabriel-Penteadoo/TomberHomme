@@ -20,11 +20,20 @@ public class PushZone : MonoBehaviour
     [Tooltip("Minimum delay between two pushes on the same player")]
     [SerializeField] private float _cooldown = 0.4f;
 
+    [Tooltip("Spinner driving this obstacle. Auto-found in parents if left empty.")]
+    [SerializeField] private Spinner _spinner;
+
     private float _nextPushTime;
 
     void Reset()
     {
         GetComponent<Collider>().isTrigger = true;
+    }
+
+    void Awake()
+    {
+        if (_spinner == null)
+            _spinner = GetComponentInParent<Spinner>();
     }
 
     void OnTriggerEnter(Collider other)
@@ -47,14 +56,12 @@ public class PushZone : MonoBehaviour
 
         Transform origin = _origin ? _origin : (transform.parent ? transform.parent : transform);
 
-        // Knock the player sideways across the (+Z) path: right (+X) when the
-        // spinner's axis Z is positive, left (-X) when negative. We use the axis
-        // VALUE you set, applied along a fixed world axis, so the direction stays
-        // stable no matter how the FBX is oriented or how far the hammer spun.
+        // Push along the paddle's forward, flipped when the spinner spins the
+        // other way (axis Z negative) so the knock follows the swing direction.
         Spinner spinner = origin.GetComponentInParent<Spinner>();
-        
+        float side = (spinner != null && spinner.Axis.z < 0f) ? -1f : 1f;
 
-        Vector3 direction = transform.forward;
+        Vector3 direction = transform.forward * side;
 
         Player.Instance.Knockback(direction * _force + Vector3.up * _lift);
 
