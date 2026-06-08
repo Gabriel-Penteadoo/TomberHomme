@@ -259,6 +259,7 @@ public class Player : MonoBehaviour
         SetJump();
         SetMovement(t);
         SetState();
+        SetDivePad(t);
         SetDive(t);
     }
 
@@ -424,27 +425,29 @@ public class Player : MonoBehaviour
             _isDivingOnPad = false;
         }
     }
-    
-    private void SetDive(float deltaTime)
-    {
 
+
+    private void SetDivePad(float deltaTime)
+    {
         if (_isDivingOnPad)
         {
-            // Sauvegarder la direction une seule fois au début
             if (_padForward == Vector3.zero)
                 _padForward = new Vector3(transform.forward.x, 0, transform.forward.z).normalized;
-            
 
-            // Forcer la vélocité dans SetMovement via un champ dédié
             _padVelocity = _padForward * _settings.DiveGroundForce;
 
-            _diveTimer = 0;
+            // Ne pas écraser un dive volontaire déjà lancé
+            if (_diveTimer <= 0)
+                _diveTimer = 0;
+
             return;
         }
 
         _padForward = Vector3.zero;
         _padVelocity = Vector3.zero;
-
+    }
+    private void SetDive(float deltaTime)
+    {
         if (_diveTimer > 0)
         {
             _diveTimer -= deltaTime;
