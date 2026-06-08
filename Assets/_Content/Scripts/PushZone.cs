@@ -20,11 +20,20 @@ public class PushZone : MonoBehaviour
     [Tooltip("Minimum delay between two pushes on the same player")]
     [SerializeField] private float _cooldown = 0.4f;
 
+    [Tooltip("Spinner driving this obstacle. Auto-found in parents if left empty.")]
+    [SerializeField] private Spinner _spinner;
+
     private float _nextPushTime;
 
     void Reset()
     {
         GetComponent<Collider>().isTrigger = true;
+    }
+
+    void Awake()
+    {
+        if (_spinner == null)
+            _spinner = GetComponentInParent<Spinner>();
     }
 
     void OnTriggerEnter(Collider other)
@@ -45,16 +54,21 @@ public class PushZone : MonoBehaviour
         if (!Player.Instance || Player.Instance.gameObject != other.gameObject)
             return;
 
-        Transform origin = _origin ? _origin : (transform.parent ? transform.parent : transform);
+        // Push along the paddle's forward, flipped when the spinner runs the
+        // other way. We look at whichever axis component is dominant (not just
+        // Z) and flip when it's negative.
+        float side = 1f;
+        if (_spinner != null)
+        {
+            Vector3 a = _spinner.Axis;
+            float dominant = Mathf.Abs(a.z) >= Mathf.Abs(a.x) && Mathf.Abs(a.z) >= Mathf.Abs(a.y) ? a.z
+                           : Mathf.Abs(a.y) >= Mathf.Abs(a.x) ? a.y
+                           : a.x;
+            if (dominant < 0f)
+                side = -1f;
+        }
 
-        // Knock the player sideways across the (+Z) path: right (+X) when the
-        // spinner's axis Z is positive, left (-X) when negative. We use the axis
-        // VALUE you set, applied along a fixed world axis, so the direction stays
-        // stable no matter how the FBX is oriented or how far the hammer spun.
-        Spinner spinner = origin.GetComponentInParent<Spinner>();
-        
-
-        Vector3 direction = transform.forward;
+        Vector3 direction = transform.forward * side;
 
         Player.Instance.Knockback(direction * _force + Vector3.up * _lift);
 
