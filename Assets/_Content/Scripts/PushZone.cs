@@ -47,11 +47,22 @@ public class PushZone : MonoBehaviour
 
         Transform origin = _origin ? _origin : (transform.parent ? transform.parent : transform);
 
-        // Right when the spinner's axis Z is positive, left when negative.
+        // Push sideways relative to the (non-spinning) spin axis: right when the
+        // axis points +Z, left when it points -Z. Derived from the axis so it
+        // stays stable no matter how far the hammer has rotated.
         Spinner spinner = origin.GetComponentInParent<Spinner>();
-        float side = (spinner != null && spinner.Axis.z < 0f) ? -1f : 1f;
+        Vector3 direction;
 
-        Vector3 direction = origin.right * side;
+        if (spinner != null)
+        {
+            Vector3 axisWorld = origin.TransformDirection(spinner.Axis);
+            direction = Vector3.Cross(Vector3.up, axisWorld);
+        }
+        else
+        {
+            direction = origin.right;
+        }
+
         direction.y = 0f;
         direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
 
