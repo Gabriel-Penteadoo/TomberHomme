@@ -47,24 +47,14 @@ public class PushZone : MonoBehaviour
 
         Transform origin = _origin ? _origin : (transform.parent ? transform.parent : transform);
 
-        // Push sideways relative to the (non-spinning) spin axis: right when the
-        // axis points +Z, left when it points -Z. Derived from the axis so it
-        // stays stable no matter how far the hammer has rotated.
+        // Knock the player sideways across the (+Z) path: right (+X) when the
+        // spinner's axis Z is positive, left (-X) when negative. We use the axis
+        // VALUE you set, applied along a fixed world axis, so the direction stays
+        // stable no matter how the FBX is oriented or how far the hammer spun.
         Spinner spinner = origin.GetComponentInParent<Spinner>();
-        Vector3 direction;
+        
 
-        if (spinner != null)
-        {
-            Vector3 axisWorld = origin.TransformDirection(spinner.Axis);
-            direction = Vector3.Cross(Vector3.up, axisWorld);
-        }
-        else
-        {
-            direction = origin.right;
-        }
-
-        direction.y = 0f;
-        direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
+        Vector3 direction = transform.forward;
 
         Player.Instance.Knockback(direction * _force + Vector3.up * _lift);
 
