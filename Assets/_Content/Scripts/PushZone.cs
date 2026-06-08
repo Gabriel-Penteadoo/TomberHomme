@@ -1,14 +1,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Trigger volume that knocks the player away from an origin point (the spin
-/// pivot by default). Put it on the moving parts of an obstacle (e.g. the
-/// hammer paddles) so it shoves the player off when it sweeps through.
+/// Trigger volume that knocks the player aside as a spinning obstacle sweeps
+/// through. The push goes to the pivot's right when the <see cref="Spinner"/>'s
+/// axis Z is positive, and to its left when negative.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class PushZone : MonoBehaviour
 {
-    [Tooltip("Point the player is pushed away from. Defaults to the parent (spin pivot).")]
+    [Tooltip("Spin pivot the push direction is taken from. Defaults to the parent.")]
     [SerializeField] private Transform _origin;
 
     [Tooltip("Horizontal knockback force")]
@@ -47,7 +47,11 @@ public class PushZone : MonoBehaviour
 
         Transform origin = _origin ? _origin : (transform.parent ? transform.parent : transform);
 
-        Vector3 direction = Player.Instance.transform.position - origin.position;
+        // Right when the spinner's axis Z is positive, left when negative.
+        Spinner spinner = origin.GetComponentInParent<Spinner>();
+        float side = (spinner != null && spinner.Axis.z < 0f) ? -1f : 1f;
+
+        Vector3 direction = origin.right * side;
         direction.y = 0f;
         direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
 

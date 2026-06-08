@@ -14,6 +14,8 @@ public class Spinner : MonoBehaviour
 
     [SerializeField] private Space _space = Space.Self;
 
+    public Vector3 Axis => _axis;
+
     void Update()
     {
         transform.Rotate(_axis, _speed * Time.deltaTime, _space);
