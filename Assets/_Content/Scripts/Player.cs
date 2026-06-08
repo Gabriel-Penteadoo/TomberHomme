@@ -138,6 +138,18 @@ public class Player : MonoBehaviour
         SetState(PlayerState.Winner);
     }
 
+    /// <summary>
+    /// Shoves the player. The horizontal part is applied as a decaying extra
+    /// force (survives the per-frame input/ground resets); a positive Y launches.
+    /// </summary>
+    public void Knockback(Vector3 velocity)
+    {
+        _knockbackVelocity = new Vector3(velocity.x, 0f, velocity.z);
+
+        if (velocity.y != 0f)
+            _state.Velocity.y = velocity.y;
+    }
+
     /// <summary>Moves the player to a pose, disabling the controller so it sticks.</summary>
     public void Teleport(Vector3 position, Quaternion rotation)
     {
@@ -189,6 +201,9 @@ public class Player : MonoBehaviour
     private bool _isDivingOnPad = false;
     private Vector3 _padForward;
     private Vector3 _padVelocity;
+
+    // Knockback (e.g. spinning obstacles). Horizontal force that decays over time.
+    private Vector3 _knockbackVelocity;
     #endregion
 
     #region Unity Lifecycle
@@ -472,8 +487,11 @@ public class Player : MonoBehaviour
 
     private void SetMovement(float deltaTime)
     {
-        Vector3 motion = _state.Velocity + _platformVelocity + _padVelocity; // ← ajoute _padVelocity
+        Vector3 motion = _state.Velocity + _platformVelocity + _padVelocity + _knockbackVelocity;
         _references.Controller.Move(motion * deltaTime);
+
+        // Knockback is an extra horizontal force that fades out on its own.
+        _knockbackVelocity = Vector3.MoveTowards(_knockbackVelocity, Vector3.zero, _settings.ExtraForcesDrag * deltaTime);
     }
 
     public void SetState(PlayerState state)
