@@ -252,6 +252,7 @@ public class Player : MonoBehaviour
                 return;
         }
 
+        CheckGroundIsSloped();
         CheckGround(t);
         SetGravity(t);
         SetVelocity(t);
@@ -408,15 +409,22 @@ public class Player : MonoBehaviour
         _state.Velocity = transform.up * force;
     }
     
-    public void StartPadDive()
+    private void CheckGroundIsSloped()
     {
-        _isDivingOnPad = true;
-    }
+        if (_state.Ground == null) return;
 
-    public void StopPadDive()
-    {
-        _isDivingOnPad = false;
+        bool isSloped = _state.Ground.gameObject.layer == LayerMask.NameToLayer("Slope");
+
+        if (isSloped)
+        {
+            _isDivingOnPad = true;
+        }
+        else
+        {
+            _isDivingOnPad = false;
+        }
     }
+    
     private void SetDive(float deltaTime)
     {
 
@@ -425,14 +433,7 @@ public class Player : MonoBehaviour
             // Sauvegarder la direction une seule fois au début
             if (_padForward == Vector3.zero)
                 _padForward = new Vector3(transform.forward.x, 0, transform.forward.z).normalized;
-
-            // Rotation couchée
-            float currentY = Mathf.Atan2(transform.forward.x, transform.forward.z) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Lerp(
-                transform.rotation,
-                Quaternion.Euler(90, currentY, 0),
-                Time.deltaTime * 15f
-            );
+            
 
             // Forcer la vélocité dans SetMovement via un champ dédié
             _padVelocity = _padForward * _settings.DiveGroundForce;
