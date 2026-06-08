@@ -47,6 +47,5 @@ MonoBehaviour:
   _settings:
     MenuScene: MenuPrincipal
     RespawnDelay: 1
-    TimerRunsDuringRespawn: 1
   _elapsed: 0
   _splits: []

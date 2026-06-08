@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -40,9 +39,6 @@ public class RunManager : MonoBehaviour
 
         [Tooltip("Delay (death animation) before respawning at the last checkpoint")]
         public float RespawnDelay = 1f;
-
-        [Tooltip("Keep the timer counting while respawning (penalises deaths)")]
-        public bool TimerRunsDuringRespawn = true;
     }
 
     [SerializeField] private Settings _settings = new Settings();
@@ -51,6 +47,9 @@ public class RunManager : MonoBehaviour
 
     public float Elapsed => _elapsed;
     public bool HasRespawn => _hasRespawn;
+    public Vector3 RespawnPosition => _respawnPosition;
+    public Quaternion RespawnRotation => _respawnRotation;
+    public float RespawnDelay => _settings.RespawnDelay;
     public IReadOnlyList<Split> Splits => _splits;
 
     #region Singleton
@@ -83,7 +82,6 @@ public class RunManager : MonoBehaviour
     private Quaternion _respawnRotation;
     private bool _hasRespawn;
     private float _lastSplitTime;
-    private bool _respawning;
     #endregion
 
     #region UI
@@ -126,9 +124,8 @@ public class RunManager : MonoBehaviour
             SetRespawn(t.position, t.rotation);
         }
 
-        bool counts = _running && !_finished && (_settings.TimerRunsDuringRespawn || !_respawning);
-
-        if (counts)
+        // Timer keeps running through deaths/respawns so they cost time.
+        if (_running && !_finished)
             _elapsed += Time.deltaTime;
 
         if (_timerLabel)
@@ -167,15 +164,6 @@ public class RunManager : MonoBehaviour
         ShowWinScreen();
     }
 
-    /// <summary>Called by <see cref="Player.Die"/> to respawn at the last checkpoint.</summary>
-    public void HandleDeath()
-    {
-        if (_finished || _respawning)
-            return;
-
-        StartCoroutine(RespawnRoutine());
-    }
-
     public void RetryRun()
     {
         Time.timeScale = 1f;
@@ -197,24 +185,6 @@ public class RunManager : MonoBehaviour
         _respawnPosition = position;
         _respawnRotation = rotation;
         _hasRespawn = true;
-    }
-
-    private IEnumerator RespawnRoutine()
-    {
-        _respawning = true;
-
-        if (Player.Instance)
-            Player.Instance.Pause(true);
-
-        yield return new WaitForSeconds(_settings.RespawnDelay);
-
-        if (Player.Instance && _hasRespawn)
-        {
-            Player.Instance.Teleport(_respawnPosition, _respawnRotation);
-            Player.Instance.Respawn();
-        }
-
-        _respawning = false;
     }
 
     private static string FormatTime(float seconds)

@@ -121,12 +121,9 @@ public class Player : MonoBehaviour
 
         SetState(PlayerState.Eliminated);
 
-        // Respawn at the last checkpoint when a run is managed, otherwise fall
-        // back to the legacy full-scene reload via the Retry prefab.
-        if (RunManager.HasInstance && RunManager.Instance.HasRespawn)
-            RunManager.Instance.HandleDeath();
-        else
-            Instantiate(_references.RetryPrefab);
+        // The Retry prefab drives the death screen, then either respawns at the
+        // last checkpoint (when a run is managed) or reloads the scene (legacy)
+        Instantiate(_references.RetryPrefab);
     }
 
     public void Win()
@@ -157,9 +154,11 @@ public class Player : MonoBehaviour
         transform.SetPositionAndRotation(position, rotation);
         _references.Controller.enabled = true;
 
+        // Reset all momentum so the player respawns at a dead stop.
         _state.Velocity = Vector3.zero;
         _platformVelocity = Vector3.zero;
         _padVelocity = Vector3.zero;
+        _knockbackVelocity = Vector3.zero;
         _state.Ground = null;
 
         Physics.SyncTransforms();
