@@ -385,7 +385,34 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7639418806218873425, guid: dce89e082ea7b9c48ab0fe0f0d38f147, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2727132813233650760}
+    - targetCorrespondingSourceObject: {fileID: 5061982855154925915, guid: dce89e082ea7b9c48ab0fe0f0d38f147, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5816403941113644162}
   m_SourcePrefab: {fileID: 100100000, guid: dce89e082ea7b9c48ab0fe0f0d38f147, type: 3}
+--- !u!137 &4010018829952489373 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4078132247542626195, guid: dce89e082ea7b9c48ab0fe0f0d38f147, type: 3}
+  m_PrefabInstance: {fileID: 1098347576281128974}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &5260727575277560149 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5061982855154925915, guid: dce89e082ea7b9c48ab0fe0f0d38f147, type: 3}
+  m_PrefabInstance: {fileID: 1098347576281128974}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5816403941113644162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5260727575277560149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93c1473c90d6a716e91f04be1fb69729, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAppearance
+  BodyRenderer: {fileID: 4010018829952489373}
+  BodyworkMaterialIndex: 0
 --- !u!95 &6467599657350210952 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 6268899434028451206, guid: dce89e082ea7b9c48ab0fe0f0d38f147, type: 3}
