@@ -1,0 +1,429 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+/// <summary>
+/// Central manager for a level run. It owns the on-screen timer, the current
+/// respawn point (updated by <see cref="Checkpoint"/>) and the win screen shown
+/// by <see cref="FinishLine"/> with a per-checkpoint recap.
+///
+/// A single instance is expected per gameplay scene. If a <see cref="Checkpoint"/>
+/// or <see cref="FinishLine"/> is triggered while none exists, one is created
+/// automatically so the system works even when nothing is wired in the scene.
+/// </summary>
+public class RunManager : MonoBehaviour
+{
+    [System.Serializable]
+    public class Split
+    {
+        [Tooltip("Checkpoint label shown in the recap")]
+        public string Name;
+
+        [Tooltip("Total elapsed time when the checkpoint was reached")]
+        public float Time;
+
+        [Tooltip("Time spent on the segment leading to this checkpoint")]
+        public float Segment;
+    }
+
+    [System.Serializable]
+    public class Settings
+    {
+        [Tooltip("Scene loaded by the win screen 'Menu' button")]
+        public string MenuScene = "MenuPrincipal";
+
+        [Tooltip("Delay (death animation) before respawning at the last checkpoint")]
+        public float RespawnDelay = 1f;
+
+        [Tooltip("Keep the timer counting while respawning (penalises deaths)")]
+        public bool TimerRunsDuringRespawn = true;
+    }
+
+    [SerializeField] private Settings _settings = new Settings();
+    [SerializeField, ReadOnly] private float _elapsed;
+    [SerializeField, ReadOnly] private List<Split> _splits = new List<Split>();
+
+    public float Elapsed => _elapsed;
+    public bool HasRespawn => _hasRespawn;
+    public IReadOnlyList<Split> Splits => _splits;
+
+    #region Singleton
+    private static RunManager _instance;
+
+    public static bool HasInstance => _instance != null;
+
+    public static RunManager Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<RunManager>();
+
+                if (_instance == null)
+                    _instance = new GameObject("RunManager").AddComponent<RunManager>();
+            }
+
+            return _instance;
+        }
+    }
+    #endregion
+
+    #region State
+    private bool _running;
+    private bool _finished;
+
+    private Vector3 _respawnPosition;
+    private Quaternion _respawnRotation;
+    private bool _hasRespawn;
+    private float _lastSplitTime;
+    private bool _respawning;
+    #endregion
+
+    #region UI
+    private TMP_Text _timerLabel;
+    private GameObject _winPanel;
+    private TMP_Text _winTotalLabel;
+    private RectTransform _winRecapRoot;
+    #endregion
+
+    #region Unity Lifecycle
+    void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+    }
+
+    void Start()
+    {
+        BuildUI();
+        _running = true;
+    }
+
+    void OnDestroy()
+    {
+        if (_instance == this)
+            _instance = null;
+    }
+
+    void Update()
+    {
+        // Capture the player's starting transform as the initial respawn point.
+        if (!_hasRespawn && Player.Instance)
+        {
+            Transform t = Player.Instance.transform;
+            SetRespawn(t.position, t.rotation);
+        }
+
+        bool counts = _running && !_finished && (_settings.TimerRunsDuringRespawn || !_respawning);
+
+        if (counts)
+            _elapsed += Time.deltaTime;
+
+        if (_timerLabel)
+            _timerLabel.text = FormatTime(_elapsed);
+    }
+    #endregion
+
+    #region Public API
+    /// <summary>Registers a checkpoint: updates the respawn point and records a split.</summary>
+    public void SetCheckpoint(string label, Vector3 position, Quaternion rotation)
+    {
+        SetRespawn(position, rotation);
+
+        _splits.Add(new Split
+        {
+            Name = string.IsNullOrEmpty(label) ? $"Checkpoint {_splits.Count + 1}" : label,
+            Time = _elapsed,
+            Segment = _elapsed - _lastSplitTime,
+        });
+
+        _lastSplitTime = _elapsed;
+    }
+
+    /// <summary>Ends the run, freezes the timer and shows the win screen.</summary>
+    public void Finish()
+    {
+        if (_finished)
+            return;
+
+        _finished = true;
+        _running = false;
+
+        if (Player.Instance)
+            Player.Instance.Win();
+
+        ShowWinScreen();
+    }
+
+    /// <summary>Called by <see cref="Player.Die"/> to respawn at the last checkpoint.</summary>
+    public void HandleDeath()
+    {
+        if (_finished || _respawning)
+            return;
+
+        StartCoroutine(RespawnRoutine());
+    }
+
+    public void RetryRun()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void GoToMenu()
+    {
+        Time.timeScale = 1f;
+
+        if (!string.IsNullOrEmpty(_settings.MenuScene))
+            SceneManager.LoadScene(_settings.MenuScene);
+    }
+    #endregion
+
+    #region Internals
+    private void SetRespawn(Vector3 position, Quaternion rotation)
+    {
+        _respawnPosition = position;
+        _respawnRotation = rotation;
+        _hasRespawn = true;
+    }
+
+    private IEnumerator RespawnRoutine()
+    {
+        _respawning = true;
+
+        if (Player.Instance)
+            Player.Instance.Pause(true);
+
+        yield return new WaitForSeconds(_settings.RespawnDelay);
+
+        if (Player.Instance && _hasRespawn)
+        {
+            Player.Instance.Teleport(_respawnPosition, _respawnRotation);
+            Player.Instance.Respawn();
+        }
+
+        _respawning = false;
+    }
+
+    private static string FormatTime(float seconds)
+    {
+        if (seconds < 0) seconds = 0;
+        int minutes = (int)(seconds / 60f);
+        float rest = seconds - minutes * 60f;
+        return $"{minutes:00}:{rest:00.000}";
+    }
+    #endregion
+
+    #region UI Construction
+    private void BuildUI()
+    {
+        EnsureEventSystem();
+
+        Canvas canvas = CreateCanvas("RunCanvas", 100);
+
+        // Permanent timer, top-center of the screen.
+        _timerLabel = CreateText(canvas.transform, "Timer", "00:00.000", 48, TextAlignmentOptions.Center);
+        RectTransform timerRect = _timerLabel.rectTransform;
+        timerRect.anchorMin = new Vector2(0.5f, 1f);
+        timerRect.anchorMax = new Vector2(0.5f, 1f);
+        timerRect.pivot = new Vector2(0.5f, 1f);
+        timerRect.anchoredPosition = new Vector2(0f, -24f);
+        timerRect.sizeDelta = new Vector2(400f, 80f);
+        _timerLabel.fontStyle = FontStyles.Bold;
+        _timerLabel.outlineWidth = 0.2f;
+        _timerLabel.outlineColor = new Color32(0, 0, 0, 200);
+
+        BuildWinPanel(canvas.transform);
+    }
+
+    private void BuildWinPanel(Transform parent)
+    {
+        _winPanel = new GameObject("WinPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        _winPanel.transform.SetParent(parent, false);
+        _winPanel.layer = LayerMask.NameToLayer("UI");
+
+        RectTransform panelRect = (RectTransform)_winPanel.transform;
+        Stretch(panelRect);
+
+        Image bg = _winPanel.GetComponent<Image>();
+        bg.color = new Color(0.02f, 0.03f, 0.08f, 0.85f);
+
+        // Title.
+        TMP_Text title = CreateText(_winPanel.transform, "Title", "FINISH!", 96, TextAlignmentOptions.Center);
+        RectTransform titleRect = title.rectTransform;
+        titleRect.anchorMin = new Vector2(0.5f, 1f);
+        titleRect.anchorMax = new Vector2(0.5f, 1f);
+        titleRect.pivot = new Vector2(0.5f, 1f);
+        titleRect.anchoredPosition = new Vector2(0f, -80f);
+        titleRect.sizeDelta = new Vector2(800f, 140f);
+        title.fontStyle = FontStyles.Bold;
+
+        // Total time.
+        _winTotalLabel = CreateText(_winPanel.transform, "Total", "00:00.000", 56, TextAlignmentOptions.Center);
+        RectTransform totalRect = _winTotalLabel.rectTransform;
+        totalRect.anchorMin = new Vector2(0.5f, 1f);
+        totalRect.anchorMax = new Vector2(0.5f, 1f);
+        totalRect.pivot = new Vector2(0.5f, 1f);
+        totalRect.anchoredPosition = new Vector2(0f, -220f);
+        totalRect.sizeDelta = new Vector2(800f, 90f);
+
+        // Recap list container with vertical layout.
+        GameObject recap = new GameObject("Recap", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        recap.transform.SetParent(_winPanel.transform, false);
+        _winRecapRoot = (RectTransform)recap.transform;
+        _winRecapRoot.anchorMin = new Vector2(0.5f, 0.5f);
+        _winRecapRoot.anchorMax = new Vector2(0.5f, 0.5f);
+        _winRecapRoot.pivot = new Vector2(0.5f, 1f);
+        _winRecapRoot.anchoredPosition = new Vector2(0f, 60f);
+        _winRecapRoot.sizeDelta = new Vector2(900f, 0f);
+
+        VerticalLayoutGroup layout = recap.GetComponent<VerticalLayoutGroup>();
+        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.spacing = 6f;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+
+        // Buttons.
+        CreateButton(_winPanel.transform, "RetryButton", "RETRY", new Vector2(-180f, 80f), RetryRun);
+        CreateButton(_winPanel.transform, "MenuButton", "MENU", new Vector2(180f, 80f), GoToMenu);
+
+        _winPanel.SetActive(false);
+    }
+
+    private void ShowWinScreen()
+    {
+        if (!_winPanel)
+            return;
+
+        _winTotalLabel.text = "TIME  " + FormatTime(_elapsed);
+
+        // Clear previous rows (e.g. when reusing the panel).
+        for (int i = _winRecapRoot.childCount - 1; i >= 0; i--)
+            Destroy(_winRecapRoot.GetChild(i).gameObject);
+
+        if (_splits.Count == 0)
+        {
+            AddRecapRow("No checkpoints reached");
+        }
+        else
+        {
+            foreach (Split split in _splits)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append(split.Name);
+                sb.Append("    ");
+                sb.Append(FormatTime(split.Time));
+                sb.Append("   (+");
+                sb.Append(FormatTime(split.Segment));
+                sb.Append(')');
+                AddRecapRow(sb.ToString());
+            }
+        }
+
+        _winPanel.SetActive(true);
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void AddRecapRow(string content)
+    {
+        TMP_Text row = CreateText(_winRecapRoot, "Row", content, 36, TextAlignmentOptions.Center);
+        LayoutElement le = row.gameObject.AddComponent<LayoutElement>();
+        le.minHeight = 44f;
+    }
+    #endregion
+
+    #region UI Helpers
+    private static void EnsureEventSystem()
+    {
+        if (FindFirstObjectByType<EventSystem>() != null)
+            return;
+
+        GameObject es = new GameObject("EventSystem", typeof(EventSystem));
+        es.AddComponent<InputSystemUIInputModule>();
+    }
+
+    private static Canvas CreateCanvas(string name, int sortOrder)
+    {
+        GameObject go = new GameObject(name, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        go.layer = LayerMask.NameToLayer("UI");
+
+        Canvas canvas = go.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = sortOrder;
+
+        CanvasScaler scaler = go.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        return canvas;
+    }
+
+    private static TMP_Text CreateText(Transform parent, string name, string content, float size, TextAlignmentOptions align)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        go.layer = LayerMask.NameToLayer("UI");
+
+        TextMeshProUGUI text = go.AddComponent<TextMeshProUGUI>();
+        text.text = content;
+        text.fontSize = size;
+        text.alignment = align;
+        text.color = Color.white;
+        text.raycastTarget = false;
+
+        if (TMP_Settings.defaultFontAsset != null)
+            text.font = TMP_Settings.defaultFontAsset;
+
+        return text;
+    }
+
+    private void CreateButton(Transform parent, string name, string label, Vector2 anchoredPos, UnityEngine.Events.UnityAction onClick)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+        go.layer = LayerMask.NameToLayer("UI");
+
+        RectTransform rect = (RectTransform)go.transform;
+        rect.anchorMin = new Vector2(0.5f, 0f);
+        rect.anchorMax = new Vector2(0.5f, 0f);
+        rect.pivot = new Vector2(0.5f, 0f);
+        rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = new Vector2(280f, 90f);
+
+        Image img = go.GetComponent<Image>();
+        img.color = new Color(0.15f, 0.5f, 0.85f, 1f);
+
+        Button button = go.GetComponent<Button>();
+        button.targetGraphic = img;
+        button.onClick.AddListener(onClick);
+
+        TMP_Text text = CreateText(go.transform, "Label", label, 40, TextAlignmentOptions.Center);
+        text.fontStyle = FontStyles.Bold;
+        Stretch(text.rectTransform);
+    }
+
+    private static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+    }
+    #endregion
+}

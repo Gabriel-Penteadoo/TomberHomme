@@ -118,11 +118,52 @@ public class Player : MonoBehaviour
     {
         if (_state.CurrentState ==  PlayerState.Eliminated)
             return;
-        
-        Instantiate(_references.RetryPrefab);
+
         SetState(PlayerState.Eliminated);
+
+        // Respawn at the last checkpoint when a run is managed, otherwise fall
+        // back to the legacy full-scene reload via the Retry prefab.
+        if (RunManager.HasInstance && RunManager.Instance.HasRespawn)
+            RunManager.Instance.HandleDeath();
+        else
+            Instantiate(_references.RetryPrefab);
     }
-    
+
+    public void Win()
+    {
+        if (_state.CurrentState == PlayerState.Winner)
+            return;
+
+        Pause(true);
+        SetState(PlayerState.Winner);
+    }
+
+    /// <summary>Moves the player to a pose, disabling the controller so it sticks.</summary>
+    public void Teleport(Vector3 position, Quaternion rotation)
+    {
+        _references.Controller.enabled = false;
+        transform.SetPositionAndRotation(position, rotation);
+        _references.Controller.enabled = true;
+
+        _state.Velocity = Vector3.zero;
+        _platformVelocity = Vector3.zero;
+        _padVelocity = Vector3.zero;
+        _state.Ground = null;
+
+        Physics.SyncTransforms();
+    }
+
+    /// <summary>Restores control after a checkpoint respawn.</summary>
+    public void Respawn()
+    {
+        _diveTimer = 0f;
+        _isDivingOnPad = false;
+        _padForward = Vector3.zero;
+
+        Pause(false);
+        SetState(PlayerState.Idle);
+    }
+
     #endregion
     
     #region Private Fields
@@ -193,9 +234,10 @@ public class Player : MonoBehaviour
         {
             case PlayerState.Eliminated:
             case PlayerState.Loser:
+            case PlayerState.Winner:
                 return;
         }
-        
+
         CheckGround(t);
         SetGravity(t);
         SetVelocity(t);
@@ -445,9 +487,10 @@ public class Player : MonoBehaviour
         {
             case PlayerState.Eliminated:
             case PlayerState.Loser:
+            case PlayerState.Winner:
                 return;
         }
-        
+
         if (_diveTimer > 0)
         {
             State.CurrentState = PlayerState.Falling;
