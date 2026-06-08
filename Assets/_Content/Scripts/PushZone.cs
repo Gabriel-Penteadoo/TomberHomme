@@ -54,12 +54,19 @@ public class PushZone : MonoBehaviour
         if (!Player.Instance || Player.Instance.gameObject != other.gameObject)
             return;
 
-        Transform origin = _origin ? _origin : (transform.parent ? transform.parent : transform);
-
-        // Push along the paddle's forward, flipped when the spinner spins the
-        // other way (axis Z negative) so the knock follows the swing direction.
-        Spinner spinner = origin.GetComponentInParent<Spinner>();
-        float side = (spinner != null && spinner.Axis.z < 0f) ? -1f : 1f;
+        // Push along the paddle's forward, flipped when the spinner runs the
+        // other way. We look at whichever axis component is dominant (not just
+        // Z) and flip when it's negative.
+        float side = 1f;
+        if (_spinner != null)
+        {
+            Vector3 a = _spinner.Axis;
+            float dominant = Mathf.Abs(a.z) >= Mathf.Abs(a.x) && Mathf.Abs(a.z) >= Mathf.Abs(a.y) ? a.z
+                           : Mathf.Abs(a.y) >= Mathf.Abs(a.x) ? a.y
+                           : a.x;
+            if (dominant < 0f)
+                side = -1f;
+        }
 
         Vector3 direction = transform.forward * side;
 

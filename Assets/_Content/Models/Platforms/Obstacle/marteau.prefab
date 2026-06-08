@@ -129,6 +129,7 @@ MonoBehaviour:
   _force: 16
   _lift: 6
   _cooldown: 0.4
+  _spinner: {fileID: 6500000000000000021}
 --- !u!1 &4590440821263473336
 GameObject:
   m_ObjectHideFlags: 0
@@ -258,6 +259,7 @@ MonoBehaviour:
   _force: 16
   _lift: 6
   _cooldown: 0.4
+  _spinner: {fileID: 6500000000000000021}
 --- !u!1 &9219072525288520284
 GameObject:
   m_ObjectHideFlags: 0
