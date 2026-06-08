@@ -391,7 +391,7 @@ public class Player : MonoBehaviour
     [ContextMenu("Jumper")]
     public void Jumper(float force)
     {
-        _state.Velocity.y = force;
+        _state.Velocity = transform.up * force;
     }
     
     public void StartPadDive()
