@@ -69,9 +69,6 @@ public class PlayerSoundManager : MonoBehaviour
             case Player.PlayerState.Jumping:
                 PlayRandom(_sounds.Jump);
                 break;
-            case Player.PlayerState.Falling:
-                Play(_sounds.Fall);
-                break;
             case Player.PlayerState.Eliminated:
                 PlayRandom(_sounds.Eliminate);
                 break;
