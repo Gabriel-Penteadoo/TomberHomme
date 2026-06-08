@@ -63,6 +63,7 @@ public class Player : MonoBehaviour
     {
         public CharacterController Controller;
         public InputActionAsset InputActions;
+        public GameObject RetryPrefab;
     }
 
     [System.Serializable]
@@ -98,6 +99,32 @@ public class Player : MonoBehaviour
     private const float MAX_GRAVITY = -50f;
     #endregion
 
+    #region Public Fields
+
+    public void Pause(bool pause)
+    {
+        _state.IsPaused = pause;
+    }
+    
+    public void Lose()
+    {
+        if (_state.CurrentState ==  PlayerState.Loser)
+            return;
+        
+        SetState(PlayerState.Loser);
+    }
+    
+    public void Die()
+    {
+        if (_state.CurrentState ==  PlayerState.Eliminated)
+            return;
+        
+        Instantiate(_references.RetryPrefab);
+        SetState(PlayerState.Eliminated);
+    }
+    
+    #endregion
+    
     #region Private Fields
     // Inputs
     private InputAction _moveAction;
@@ -162,6 +189,13 @@ public class Player : MonoBehaviour
     {
         float t = Time.deltaTime;
 
+        switch (_state.CurrentState)
+        {
+            case PlayerState.Eliminated:
+            case PlayerState.Loser:
+                return;
+        }
+        
         CheckGround(t);
         SetGravity(t);
         SetVelocity(t);
@@ -169,6 +203,13 @@ public class Player : MonoBehaviour
         SetMovement(t);
         SetState();
         SetDive(t);
+    }
+
+    void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if ((_settings.DeathLayer.value & (1 << hit.gameObject.layer)) != 0)
+            Die();
+        
     }
     #endregion
 
@@ -392,8 +433,21 @@ public class Player : MonoBehaviour
         Vector3 motion = _state.Velocity + _platformVelocity + _padVelocity; // ← ajoute _padVelocity
         _references.Controller.Move(motion * deltaTime);
     }
+
+    public void SetState(PlayerState state)
+    {
+        State.CurrentState = state;
+    }
+    
     private void SetState()
     {
+        switch (_state.CurrentState)
+        {
+            case PlayerState.Eliminated:
+            case PlayerState.Loser:
+                return;
+        }
+        
         if (_diveTimer > 0)
         {
             State.CurrentState = PlayerState.Falling;
