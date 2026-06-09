@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -86,6 +87,7 @@ public class RunManager : MonoBehaviour
 
     #region UI
     private TMP_Text _timerLabel;
+    private TMP_Text _countdownLabel;
     private GameObject _winPanel;
     private TMP_Text _winTotalLabel;
     private RectTransform _winRecapRoot;
@@ -106,7 +108,13 @@ public class RunManager : MonoBehaviour
     void Start()
     {
         BuildUI();
-        _running = true;
+
+        // Hold the run behind a Mario Kart-style "3, 2, 1, GO!" countdown on the
+        // race scenes; everywhere else the run starts immediately.
+        if (ShouldPlayCountdown())
+            StartCoroutine(CountdownRoutine());
+        else
+            _running = true;
     }
 
     void OnDestroy()
@@ -130,6 +138,68 @@ public class RunManager : MonoBehaviour
 
         if (_timerLabel)
             _timerLabel.text = FormatTime(_elapsed);
+    }
+    #endregion
+
+    #region Countdown
+    // Scenes that open with the start countdown. Other scenes start their run
+    // immediately, so a RunManager spawned on demand there never freezes the game.
+    private static readonly string[] CountdownScenes = { "PlatformerScene", "RampUp" };
+
+    private static bool ShouldPlayCountdown()
+    {
+        string active = SceneManager.GetActiveScene().name;
+        foreach (string scene in CountdownScenes)
+            if (active == scene)
+                return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Freezes the world (timeScale 0) and counts "3, 2, 1, GO!" before releasing
+    /// control and starting the timer. Runs on unscaled time so it ticks while frozen.
+    /// </summary>
+    private IEnumerator CountdownRoutine()
+    {
+        Time.timeScale = 0f;
+
+        string[] steps = { "3", "2", "1", "GO!" };
+        Color number = Color.white;
+        Color go = new Color(0.4f, 1f, 0.4f);
+
+        for (int i = 0; i < steps.Length; i++)
+        {
+            bool isGo = i == steps.Length - 1;
+
+            _countdownLabel.text = steps[i];
+            _countdownLabel.color = isGo ? go : number;
+            _countdownLabel.gameObject.SetActive(true);
+
+            yield return PopLabel(_countdownLabel.rectTransform, isGo ? 0.7f : 1f);
+        }
+
+        _countdownLabel.gameObject.SetActive(false);
+
+        Time.timeScale = 1f;
+        _running = true;
+    }
+
+    /// <summary>Quick scale punch that settles to normal size, held for the rest of the beat.</summary>
+    private static IEnumerator PopLabel(RectTransform rect, float duration)
+    {
+        const float popInPortion = 0.3f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float settle = Mathf.Clamp01(elapsed / (duration * popInPortion));
+            rect.localScale = Vector3.one * Mathf.Lerp(1.7f, 1f, settle);
+            yield return null;
+        }
+
+        rect.localScale = Vector3.one;
     }
     #endregion
 
@@ -214,6 +284,19 @@ public class RunManager : MonoBehaviour
         _timerLabel.fontStyle = FontStyles.Bold;
         _timerLabel.outlineWidth = 0.2f;
         _timerLabel.outlineColor = new Color32(0, 0, 0, 200);
+
+        // Big centered countdown number, hidden until the start sequence plays.
+        _countdownLabel = CreateText(canvas.transform, "Countdown", "", 220, TextAlignmentOptions.Center);
+        RectTransform countdownRect = _countdownLabel.rectTransform;
+        countdownRect.anchorMin = new Vector2(0.5f, 0.5f);
+        countdownRect.anchorMax = new Vector2(0.5f, 0.5f);
+        countdownRect.pivot = new Vector2(0.5f, 0.5f);
+        countdownRect.anchoredPosition = Vector2.zero;
+        countdownRect.sizeDelta = new Vector2(700f, 320f);
+        _countdownLabel.fontStyle = FontStyles.Bold;
+        _countdownLabel.outlineWidth = 0.25f;
+        _countdownLabel.outlineColor = new Color32(0, 0, 0, 220);
+        _countdownLabel.gameObject.SetActive(false);
 
         BuildWinPanel(canvas.transform);
     }
