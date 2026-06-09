@@ -707,9 +707,9 @@
     "m_ShaderOutputName": "Emission",
     "m_StageCapability": 2,
     "m_Value": {
-        "x": 0.0,
+        "x": 0.012691441923379898,
         "y": 0.0,
-        "z": 0.0
+        "z": 0.008005558513104916
     },
     "m_DefaultValue": {
         "x": 0.0,
@@ -1023,7 +1023,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Metallic",
     "m_StageCapability": 2,
-    "m_Value": 0.800000011920929,
+    "m_Value": 0.5,
     "m_DefaultValue": 0.0,
     "m_Labels": [],
     "m_LiteralMode": false
@@ -1376,9 +1376,9 @@
     "m_PerRendererData": false,
     "m_customAttributes": [],
     "m_Value": {
-        "r": 0.1924527883529663,
-        "g": 0.1924527883529663,
-        "b": 0.1924527883529663,
+        "r": 0.5018867254257202,
+        "g": 0.2043994814157486,
+        "b": 0.06723389029502869,
         "a": 1.0
     },
     "isMainColor": false,
@@ -1411,9 +1411,9 @@
     "m_PerRendererData": false,
     "m_customAttributes": [],
     "m_Value": {
-        "r": 0.0,
-        "g": 0.0,
-        "b": 0.0,
+        "r": 0.41132068634033205,
+        "g": 0.2071477770805359,
+        "b": 0.061310019344091418,
         "a": 1.0
     },
     "isMainColor": false,
@@ -1909,7 +1909,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Scale",
     "m_StageCapability": 3,
-    "m_Value": 10.0,
+    "m_Value": 5.0,
     "m_DefaultValue": 500.0,
     "m_Labels": [],
     "m_LiteralMode": false
@@ -1925,7 +1925,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Scale",
     "m_StageCapability": 3,
-    "m_Value": 10.0,
+    "m_Value": 5.0,
     "m_DefaultValue": 500.0,
     "m_Labels": [],
     "m_LiteralMode": false
@@ -2006,7 +2006,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Smoothness",
     "m_StageCapability": 2,
-    "m_Value": 0.800000011920929,
+    "m_Value": 0.4000000059604645,
     "m_DefaultValue": 0.5,
     "m_Labels": [],
     "m_LiteralMode": false
@@ -2072,7 +2072,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Occlusion",
     "m_StageCapability": 2,
-    "m_Value": 0.10000000149011612,
+    "m_Value": 0.0,
     "m_DefaultValue": 1.0,
     "m_Labels": [],
     "m_LiteralMode": false
@@ -2297,9 +2297,9 @@
     "m_PerRendererData": false,
     "m_customAttributes": [],
     "m_Value": {
-        "r": 0.00828347634524107,
-        "g": 0.005504833534359932,
-        "b": 0.0029226604383438827,
+        "r": 0.2725490629673004,
+        "g": 0.1352940946817398,
+        "b": 0.037254903465509418,
         "a": 1.0
     },
     "isMainColor": false,
