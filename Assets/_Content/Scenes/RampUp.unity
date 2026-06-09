@@ -1655,6 +1655,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 6193114878953081280, guid: 80fb537b500074087a376897f32e2458, type: 3}
+      propertyPath: _settings.DiveDuration
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6193114878953081280, guid: 80fb537b500074087a376897f32e2458, type: 3}
+      propertyPath: _settings.DiveForwardForce
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6193114878953081280, guid: 80fb537b500074087a376897f32e2458, type: 3}
+      propertyPath: _settings.DiveLandDistance
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6193114878953081280, guid: 80fb537b500074087a376897f32e2458, type: 3}
       propertyPath: _settings.GroundLayer.m_Bits
       value: 320
       objectReference: {fileID: 0}
