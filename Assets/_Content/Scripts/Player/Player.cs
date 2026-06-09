@@ -242,6 +242,9 @@ public class Player : MonoBehaviour
     // Stun (e.g. cannon item impact). Locks control while the body tumbles.
     private float _stunTimer;
     private Vector3 _tumbleAxis = Vector3.right;
+    // Invisible pivot at the hitbox centre that the visual hangs from, so the stun
+    // tumble spins about the middle of the body instead of the feet.
+    private Transform _tumblePivot;
     #endregion
 
     #region Unity Lifecycle
@@ -267,6 +270,17 @@ public class Player : MonoBehaviour
         _groundCheckRayOffset = cc.center + Vector3.up * (-cc.height * .5f - cc.skinWidth + _settings.GroundTolerance);
         _groundCheckSphereOffset = cc.center + Vector3.up * (-cc.height * .5f + cc.radius - cc.skinWidth - _settings.GroundTolerance);
         _groundCheckRadius = cc.radius;
+
+        // Hang the visual off an invisible pivot at the hitbox centre so the stun
+        // tumble rotates about the middle of the body, not the feet.
+        if (_references.Visual != null)
+        {
+            GameObject pivot = new GameObject("TumblePivot");
+            pivot.transform.SetParent(transform, false);
+            pivot.transform.localPosition = cc.center;
+            _tumblePivot = pivot.transform;
+            _references.Visual.SetParent(_tumblePivot, true);
+        }
     }
 
     void OnEnable()
@@ -567,8 +581,8 @@ public class Player : MonoBehaviour
 
         SetMovement(deltaTime);
 
-        if (_references.Visual != null)
-            _references.Visual.Rotate(_tumbleAxis, _settings.StunTumbleSpeed * deltaTime, Space.Self);
+        if (_tumblePivot != null)
+            _tumblePivot.Rotate(_tumbleAxis, _settings.StunTumbleSpeed * deltaTime, Space.Self);
 
         _stunTimer -= deltaTime;
         if (_stunTimer <= 0f)
@@ -578,11 +592,11 @@ public class Player : MonoBehaviour
     /// <summary>Eases the tumbled body back upright once the stun has ended.</summary>
     private void RestoreVisual(float deltaTime)
     {
-        if (_references.Visual == null)
+        if (_tumblePivot == null)
             return;
 
-        _references.Visual.localRotation = Quaternion.Slerp(
-            _references.Visual.localRotation, Quaternion.identity, _settings.StunRecoverSpeed * deltaTime);
+        _tumblePivot.localRotation = Quaternion.Slerp(
+            _tumblePivot.localRotation, Quaternion.identity, _settings.StunRecoverSpeed * deltaTime);
     }
 
     public void SetState(PlayerState state)
