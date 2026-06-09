@@ -268,11 +268,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -433,11 +433,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -529,11 +529,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -594,11 +594,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -659,11 +659,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -994,11 +994,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1090,11 +1090,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1501,11 +1501,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1566,11 +1566,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1664,11 +1664,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6193114878953081280, guid: 80fb537b500074087a376897f32e2458, type: 3}
       propertyPath: _settings.DiveDuration
-      value: 0.6
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 6193114878953081280, guid: 80fb537b500074087a376897f32e2458, type: 3}
       propertyPath: _settings.DiveForwardForce
-      value: 6
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 6193114878953081280, guid: 80fb537b500074087a376897f32e2458, type: 3}
       propertyPath: _settings.DiveLandDistance
@@ -1880,11 +1880,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1945,11 +1945,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2346,11 +2346,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2411,11 +2411,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2481,11 +2481,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2546,11 +2546,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _fireInterval
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8200000000000000003, guid: d2b3c4d5e6f70819a2b3c4d5e6f70819, type: 3}
       propertyPath: _intervalJitter
-      value: 10
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
