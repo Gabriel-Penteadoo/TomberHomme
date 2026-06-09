@@ -18,7 +18,8 @@ public class StyleMenuUI : MonoBehaviour
     {
         StylePanel.SetActive(!StylePanel.activeSelf);
     }
-
+    
+    
     private void BuildColorButtons()
     {
         if (PlayerCustomization.Instance == null) return;
