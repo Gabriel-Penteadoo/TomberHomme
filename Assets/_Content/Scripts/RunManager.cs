@@ -83,6 +83,7 @@ public class RunManager : MonoBehaviour
     private Quaternion _respawnRotation;
     private bool _hasRespawn;
     private float _lastSplitTime;
+    private int _lastRank = -1;
     #endregion
 
     #region UI
@@ -91,6 +92,7 @@ public class RunManager : MonoBehaviour
     private GameObject _winPanel;
     private TMP_Text _winTotalLabel;
     private RectTransform _winRecapRoot;
+    private RectTransform _winScoreboardRoot;
     #endregion
 
     #region Unity Lifecycle
@@ -231,6 +233,9 @@ public class RunManager : MonoBehaviour
         if (Player.Instance)
             Player.Instance.Win();
 
+        // Record the finishing time on this level's top-10 board.
+        _lastRank = Scoreboard.Submit(SceneManager.GetActiveScene().name, _elapsed);
+
         ShowWinScreen();
     }
 
@@ -332,23 +337,10 @@ public class RunManager : MonoBehaviour
         totalRect.anchoredPosition = new Vector2(0f, -220f);
         totalRect.sizeDelta = new Vector2(800f, 90f);
 
-        // Recap list container with vertical layout.
-        GameObject recap = new GameObject("Recap", typeof(RectTransform), typeof(VerticalLayoutGroup));
-        recap.transform.SetParent(_winPanel.transform, false);
-        _winRecapRoot = (RectTransform)recap.transform;
-        _winRecapRoot.anchorMin = new Vector2(0.5f, 0.5f);
-        _winRecapRoot.anchorMax = new Vector2(0.5f, 0.5f);
-        _winRecapRoot.pivot = new Vector2(0.5f, 1f);
-        _winRecapRoot.anchoredPosition = new Vector2(0f, 60f);
-        _winRecapRoot.sizeDelta = new Vector2(900f, 0f);
-
-        VerticalLayoutGroup layout = recap.GetComponent<VerticalLayoutGroup>();
-        layout.childAlignment = TextAnchor.UpperCenter;
-        layout.spacing = 6f;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
+        // Two columns under the time: checkpoint splits (left) and this level's
+        // top-10 best times (right).
+        _winRecapRoot = CreateColumn("Recap", new Vector2(-260f, 120f), 520f);
+        _winScoreboardRoot = CreateColumn("Scoreboard", new Vector2(260f, 120f), 520f);
 
         // Buttons.
         CreateButton(_winPanel.transform, "RetryButton", "RETRY", new Vector2(-180f, 80f), RetryRun);
@@ -364,39 +356,75 @@ public class RunManager : MonoBehaviour
 
         _winTotalLabel.text = "TIME  " + FormatTime(_elapsed);
 
-        // Clear previous rows (e.g. when reusing the panel).
-        for (int i = _winRecapRoot.childCount - 1; i >= 0; i--)
-            Destroy(_winRecapRoot.GetChild(i).gameObject);
-
-        if (_splits.Count == 0)
-        {
-            AddRecapRow("No checkpoints reached");
-        }
-        else
-        {
-            foreach (Split split in _splits)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append(split.Name);
-                sb.Append("    ");
-                sb.Append(FormatTime(split.Time));
-                sb.Append("   (+");
-                sb.Append(FormatTime(split.Segment));
-                sb.Append(')');
-                AddRecapRow(sb.ToString());
-            }
-        }
+        PopulateRecap();
+        PopulateScoreboard();
 
         _winPanel.SetActive(true);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
 
-    private void AddRecapRow(string content)
+    private void PopulateRecap()
     {
-        TMP_Text row = CreateText(_winRecapRoot, "Row", content, 36, TextAlignmentOptions.Center);
+        ClearChildren(_winRecapRoot);
+        AddRow(_winRecapRoot, "CHECKPOINTS", 38, true, Color.white);
+
+        if (_splits.Count == 0)
+        {
+            AddRow(_winRecapRoot, "No checkpoints reached", 32, false, Color.white);
+            return;
+        }
+
+        foreach (Split split in _splits)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(split.Name);
+            sb.Append("    ");
+            sb.Append(FormatTime(split.Time));
+            sb.Append("   (+");
+            sb.Append(FormatTime(split.Segment));
+            sb.Append(')');
+            AddRow(_winRecapRoot, sb.ToString(), 30, false, Color.white);
+        }
+    }
+
+    private void PopulateScoreboard()
+    {
+        ClearChildren(_winScoreboardRoot);
+        AddRow(_winScoreboardRoot, "BEST TIMES", 38, true, Color.white);
+
+        List<float> times = Scoreboard.GetTimes(SceneManager.GetActiveScene().name);
+
+        if (times.Count == 0)
+        {
+            AddRow(_winScoreboardRoot, "No times yet", 32, false, Color.white);
+            return;
+        }
+
+        Color gold = new Color(1f, 0.84f, 0.2f); // marks the run just finished
+        for (int i = 0; i < times.Count; i++)
+        {
+            bool isNew = (i + 1) == _lastRank;
+            string row = $"{i + 1,2}.   {FormatTime(times[i])}";
+            AddRow(_winScoreboardRoot, row, 30, isNew, isNew ? gold : Color.white);
+        }
+    }
+
+    private void AddRow(RectTransform root, string content, float size, bool bold, Color color)
+    {
+        TMP_Text row = CreateText(root, "Row", content, size, TextAlignmentOptions.Center);
+        row.color = color;
+        if (bold)
+            row.fontStyle = FontStyles.Bold;
+
         LayoutElement le = row.gameObject.AddComponent<LayoutElement>();
-        le.minHeight = 44f;
+        le.minHeight = 42f;
+    }
+
+    private static void ClearChildren(RectTransform root)
+    {
+        for (int i = root.childCount - 1; i >= 0; i--)
+            Destroy(root.GetChild(i).gameObject);
     }
     #endregion
 
@@ -477,6 +505,31 @@ public class RunManager : MonoBehaviour
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
+    }
+
+    /// <summary>Centre-anchored, top-pivoted vertical list that grows downward.</summary>
+    private RectTransform CreateColumn(string name, Vector2 anchoredPos, float width)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(VerticalLayoutGroup));
+        go.transform.SetParent(_winPanel.transform, false);
+        go.layer = LayerMask.NameToLayer("UI");
+
+        RectTransform rect = (RectTransform)go.transform;
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = anchoredPos;
+        rect.sizeDelta = new Vector2(width, 0f);
+
+        VerticalLayoutGroup layout = go.GetComponent<VerticalLayoutGroup>();
+        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.spacing = 6f;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+
+        return rect;
     }
     #endregion
 }
