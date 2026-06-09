@@ -52,6 +52,14 @@ public class Player : MonoBehaviour
         [Tooltip("Decay rate of extra forces (m/s²)")]
         public float ExtraForcesDrag = 8f;
 
+        [Header("Stun")]
+
+        [Tooltip("Visual tumble speed while stunned (degrees per second)")]
+        public float StunTumbleSpeed = 540f;
+
+        [Tooltip("How fast the body rights itself once the stun ends")]
+        public float StunRecoverSpeed = 12f;
+
         [Header("Debug")]
 
         [Tooltip("GUI logs of current state")]
@@ -64,6 +72,9 @@ public class Player : MonoBehaviour
         public CharacterController Controller;
         public InputActionAsset InputActions;
         public GameObject RetryPrefab;
+
+        [Tooltip("Model root spun for the stun tumble. Defaults to the first child.")]
+        public Transform Visual;
     }
 
     [System.Serializable]
@@ -147,6 +158,28 @@ public class Player : MonoBehaviour
             _state.Velocity.y = velocity.y;
     }
 
+    /// <summary>
+    /// Bonks the player: takes away control for <paramref name="duration"/>
+    /// seconds while a knockback flings them and the body tumbles, then they
+    /// recover. A lightweight stand-in for a real ragdoll.
+    /// </summary>
+    public void Stun(float duration, Vector3 knockback)
+    {
+        switch (_state.CurrentState)
+        {
+            case PlayerState.Eliminated:
+            case PlayerState.Loser:
+            case PlayerState.Winner:
+                return;
+        }
+
+        _stunTimer = Mathf.Max(_stunTimer, duration);
+        _tumbleAxis = Random.onUnitSphere;
+
+        SetState(PlayerState.Stunned);
+        Knockback(knockback);
+    }
+
     /// <summary>Moves the player to a pose, disabling the controller so it sticks.</summary>
     public void Teleport(Vector3 position, Quaternion rotation)
     {
@@ -203,6 +236,10 @@ public class Player : MonoBehaviour
 
     // Knockback (e.g. spinning obstacles). Horizontal force that decays over time.
     private Vector3 _knockbackVelocity;
+
+    // Stun (e.g. cannon item impact). Locks control while the body tumbles.
+    private float _stunTimer;
+    private Vector3 _tumbleAxis = Vector3.right;
     #endregion
 
     #region Unity Lifecycle
@@ -218,6 +255,10 @@ public class Player : MonoBehaviour
 
         // Camera
         _camera = Camera.main;
+
+        // Visual root used for the stun tumble
+        if (_references.Visual == null && transform.childCount > 0)
+            _references.Visual = transform.GetChild(0);
 
         // Ground check geometry
         CharacterController cc = _references.Controller;
@@ -251,6 +292,14 @@ public class Player : MonoBehaviour
             case PlayerState.Winner:
                 return;
         }
+
+        if (_state.CurrentState == PlayerState.Stunned)
+        {
+            UpdateStunned(t);
+            return;
+        }
+
+        RestoreVisual(t);
 
         CheckGroundIsSloped();
         CheckGround(t);
@@ -495,6 +544,40 @@ public class Player : MonoBehaviour
 
         // Knockback is an extra horizontal force that fades out on its own.
         _knockbackVelocity = Vector3.MoveTowards(_knockbackVelocity, Vector3.zero, _settings.ExtraForcesDrag * deltaTime);
+    }
+
+    /// <summary>
+    /// Drives the player while stunned: control is suspended, the body keeps its
+    /// gravity and decaying knockback, and the visual tumbles until the timer runs
+    /// out, then we hand control back.
+    /// </summary>
+    private void UpdateStunned(float deltaTime)
+    {
+        CheckGround(deltaTime);
+        SetGravity(deltaTime);
+
+        // No steering while stunned — only the knockback and gravity move us.
+        _state.Velocity.x = 0f;
+        _state.Velocity.z = 0f;
+
+        SetMovement(deltaTime);
+
+        if (_references.Visual != null)
+            _references.Visual.Rotate(_tumbleAxis, _settings.StunTumbleSpeed * deltaTime, Space.Self);
+
+        _stunTimer -= deltaTime;
+        if (_stunTimer <= 0f)
+            SetState(_state.IsGrounded ? PlayerState.Idle : PlayerState.Falling);
+    }
+
+    /// <summary>Eases the tumbled body back upright once the stun has ended.</summary>
+    private void RestoreVisual(float deltaTime)
+    {
+        if (_references.Visual == null)
+            return;
+
+        _references.Visual.localRotation = Quaternion.Slerp(
+            _references.Visual.localRotation, Quaternion.identity, _settings.StunRecoverSpeed * deltaTime);
     }
 
     public void SetState(PlayerState state)

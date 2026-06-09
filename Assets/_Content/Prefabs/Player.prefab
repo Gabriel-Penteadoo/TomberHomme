@@ -90,11 +90,14 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 128
     ExtraForcesDrag: 8
+    StunTumbleSpeed: 540
+    StunRecoverSpeed: 12
     StateLogs: 0
   _references:
     Controller: {fileID: 1260992000354806844}
     InputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     RetryPrefab: {fileID: 397803120344425210, guid: 2c15d1f2ac81d441186f22deb495674e, type: 3}
+    Visual: {fileID: 7958255319749550309}
   _state:
     CurrentState: 0
     IsPaused: 0
