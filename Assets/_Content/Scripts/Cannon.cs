@@ -5,12 +5,6 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-/// <summary>
-/// Periodically launches a random decorative item out of the muzzle like a
-/// cannon. Each item gets a Rigidbody and a (non-trigger) Collider so it
-/// physically blocks the player and hinders their climb up a path. Aim the
-/// cannon by rotating the prefab: items are fired along the muzzle's local up.
-/// </summary>
 public class Cannon : MonoBehaviour
 {
     [Header("Items")]
