@@ -23,21 +23,26 @@ public class StyleMenuUI : MonoBehaviour
     {
         if (PlayerCustomization.Instance == null) return;
 
+        // Setup grille sur le parent
+        GridLayoutGroup grid = ColorButtonParent.GetComponent<GridLayoutGroup>()
+                               ?? ColorButtonParent.gameObject.AddComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(50, 50);
+        grid.spacing = new Vector2(5, 5);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 4;
+
         Color[] colors = PlayerCustomization.Instance.AvailableColors;
 
         for (int i = 0; i < colors.Length; i++)
         {
-            int index = i; // capture pour le lambda
+            int index = i;
             GameObject btn = Instantiate(ColorButtonPrefab, ColorButtonParent);
 
-            // Colorie le bouton pour qu'on voit la couleur
             btn.GetComponent<Image>().color = colors[i];
 
-            // Au clic : sauvegarde + feedback visuel (optionnel)
             btn.GetComponent<Button>().onClick.AddListener(() =>
             {
                 PlayerCustomization.Instance.SelectColor(index);
-                // Si le player est déjà en scène (preview dans le menu), applique direct
                 PlayerAppearance appearance = FindObjectOfType<PlayerAppearance>();
                 if (appearance != null) appearance.ApplyColor();
             });
