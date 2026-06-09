@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,7 +20,15 @@ public class PlayerAppearance : MonoBehaviour
 
     void Start()
     {
-        Invoke(nameof(ApplyAll), 0.1f);
+        // Realtime delay (not Invoke/WaitForSeconds) so the appearance still applies
+        // while the start countdown freezes the game with Time.timeScale = 0.
+        StartCoroutine(ApplyAllDelayed());
+    }
+
+    private IEnumerator ApplyAllDelayed()
+    {
+        yield return new WaitForSecondsRealtime(0.1f);
+        ApplyAll();
     }
 
     public void ApplyAll()
