@@ -23,9 +23,11 @@ public class Player : MonoBehaviour
     {
         [Header("Dive")]
         public float DiveForwardForce = 12f;
-        public float DiveDownForce = 8f;
         public float DiveGroundForce = 10f;
         public float DiveDuration = 0.6f;
+
+        [Tooltip("Slight upwards boost applied when starting an airborne dive.")]
+        public float DiveBounceForce = 4f;
         
         [Header("Movements")]
 
@@ -499,14 +501,21 @@ public class Player : MonoBehaviour
     {
         if (_diveTimer > 0)
         {
+            // The dive ends the moment it touches the ground.
+            if (_state.IsGrounded)
+            {
+                _diveTimer = 0f;
+                return;
+            }
+
             _diveTimer -= deltaTime;
-            
+
             transform.rotation = Quaternion.Lerp(
                 transform.rotation,
                 Quaternion.Euler(90, transform.eulerAngles.y, 0),
                 deltaTime * 15f
             );
-            
+
             return;
         }
         transform.rotation = Quaternion.Lerp(
@@ -515,24 +524,17 @@ public class Player : MonoBehaviour
             deltaTime * 10f
         );
 
-        if (_diveAction.triggered)
+        // You can only dive while airborne.
+        if (_diveAction.triggered && !_state.IsGrounded)
         {
             _diveTimer = _settings.DiveDuration;
 
             Vector3 forward = transform.forward;
+            _state.Velocity.x = forward.x * _settings.DiveForwardForce;
+            _state.Velocity.z = forward.z * _settings.DiveForwardForce;
 
-            if (_state.IsGrounded)
-            {
-                _state.Velocity.x = forward.x * _settings.DiveGroundForce;
-                _state.Velocity.z = forward.z * _settings.DiveGroundForce;
-                _state.Velocity.y = 0;
-            }
-            else
-            {
-                _state.Velocity.x = forward.x * _settings.DiveForwardForce;
-                _state.Velocity.z = forward.z * _settings.DiveForwardForce;
-                _state.Velocity.y = -_settings.DiveDownForce;
-            }
+            // Slight upwards boost so the dive launches into a small arc.
+            _state.Velocity.y = _settings.DiveBounceForce;
         }
     }
     
