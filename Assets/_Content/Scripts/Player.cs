@@ -28,7 +28,11 @@ public class Player : MonoBehaviour
 
         [Tooltip("Slight upwards boost applied when starting an airborne dive.")]
         public float DiveBounceForce = 4f;
-        
+
+        [Tooltip("While diving down a slope the player arcs over the surface and never " +
+                 "touches it. End the dive once an angled surface is within this distance below.")]
+        public float DiveLandDistance = 3f;
+
         [Header("Movements")]
 
         [Tooltip("Movement speed in km/h")]
@@ -203,6 +207,7 @@ public class Player : MonoBehaviour
     public void Respawn()
     {
         _diveTimer = 0f;
+        _jumpArmed = true;
         _isDivingOnPad = false;
         _padForward = Vector3.zero;
 
@@ -216,6 +221,9 @@ public class Player : MonoBehaviour
     // Inputs
     private InputAction _moveAction;
     private InputAction _jumpAction;
+
+    // Re-armed only on landing, so each ground contact grants a single jump.
+    private bool _jumpArmed = true;
 
     // Camera
     private Camera _camera;
@@ -325,18 +333,28 @@ public class Player : MonoBehaviour
     #region Player Logic
     private void CheckGround(float deltaTime)
     {
+        // Ignore triggers: SlopeSlide adds a tall trigger slab on the slope (a
+        // ground layer), which would otherwise register as ground metres above it.
         // Raycast for center contact
         Vector3 rayOrigin = transform.position + _groundCheckRayOffset;
         bool rayHit = Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit rayInfo,
-                                      _settings.GroundTolerance * 2f, _settings.GroundLayer);
+                                      _settings.GroundTolerance * 2f, _settings.GroundLayer,
+                                      QueryTriggerInteraction.Ignore);
 
         // OverlapSphere for edge contact
         Vector3 sphereOrigin = transform.position + _groundCheckSphereOffset;
-        int overlapCount = Physics.OverlapSphereNonAlloc(sphereOrigin, _groundCheckRadius, _overlapResults, _settings.GroundLayer);
+        int overlapCount = Physics.OverlapSphereNonAlloc(sphereOrigin, _groundCheckRadius, _overlapResults,
+                                                         _settings.GroundLayer, QueryTriggerInteraction.Ignore);
         bool sphereHit = overlapCount > 0;
 
         bool wasGrounded = _state.IsGrounded;
         bool isGrounded = rayHit || sphereHit;
+
+        // Re-arm the jump only on the airborne->grounded transition. On slopes the
+        // player stays in ground contact, so re-arming on "is grounded" alone would
+        // let them jump every frame once velocity decays.
+        if (isGrounded && !wasGrounded)
+            _jumpArmed = true;
 
         if (isGrounded)
         {
@@ -449,9 +467,10 @@ public class Player : MonoBehaviour
 
     private void SetJump()
     {
-        if (_jumpAction.triggered && _state.IsGrounded)
+        if (_jumpAction.triggered && _state.IsGrounded && _jumpArmed)
         {
             _state.Velocity.y = _settings.JumpForce;
+            _jumpArmed = false;
         }
     }
 
@@ -463,7 +482,11 @@ public class Player : MonoBehaviour
     
     private void CheckGroundIsSloped()
     {
-        if (_state.Ground == null) return;
+        if (_state.Ground == null)
+        {
+            _isDivingOnPad = false;
+            return;
+        }
 
         bool isSloped = _state.Ground.gameObject.layer == LayerMask.NameToLayer("Slope");
 
@@ -501,8 +524,12 @@ public class Player : MonoBehaviour
     {
         if (_diveTimer > 0)
         {
-            // The dive ends the moment it touches the ground.
-            if (_state.IsGrounded)
+            // The dive ends once we land (Velocity.y <= 0 keeps the upward takeoff
+            // boost from cancelling it on the first frame). On flat ground this is a
+            // real touchdown; a boosted forward dive also arcs over downhill slopes
+            // without ever touching them, so we additionally end it when an angled
+            // surface comes within reach below.
+            if (_state.Velocity.y <= 0f && (_state.IsGrounded || SlopeWithinReachBelow()))
             {
                 _diveTimer = 0f;
                 return;
@@ -524,8 +551,9 @@ public class Player : MonoBehaviour
             deltaTime * 10f
         );
 
-        // You can only dive while airborne.
-        if (_diveAction.triggered && !_state.IsGrounded)
+        // You can only dive while airborne. Velocity.y > 0 covers the takeoff
+        // window where the ground check still reports grounded (notably slopes).
+        if (_diveAction.triggered && (!_state.IsGrounded || _state.Velocity.y > 0))
         {
             _diveTimer = _settings.DiveDuration;
 
@@ -537,7 +565,27 @@ public class Player : MonoBehaviour
             _state.Velocity.y = _settings.DiveBounceForce;
         }
     }
-    
+
+    // Minimum tilt (degrees from flat) for a surface below to count as a slope the
+    // dive should land on early, rather than waiting for a touchdown that never comes.
+    private const float DIVE_SLOPE_MIN_ANGLE = 15f;
+
+    /// <summary>
+    /// True when an angled surface sits within <see cref="Settings.DiveLandDistance"/>
+    /// straight below the feet. Used to end a dive that arcs over a downhill slope.
+    /// Flat ground is ignored so normal dives still run until an actual landing.
+    /// </summary>
+    private bool SlopeWithinReachBelow()
+    {
+        Vector3 origin = transform.position + _groundCheckRayOffset;
+        if (!Physics.Raycast(origin, Vector3.down, out RaycastHit hit,
+                             _settings.DiveLandDistance, _settings.GroundLayer,
+                             QueryTriggerInteraction.Ignore))
+            return false;
+
+        return Vector3.Angle(hit.normal, Vector3.up) >= DIVE_SLOPE_MIN_ANGLE;
+    }
+
 
     private void SetMovement(float deltaTime)
     {
