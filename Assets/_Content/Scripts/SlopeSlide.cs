@@ -31,6 +31,14 @@ public class SlopeSlide : MonoBehaviour
     /// <summary>
     /// Adds a trigger BoxCollider covering a slab just above the solid collider,
     /// so things standing on the slope fall inside it.
+    ///
+    /// The slab lives on a child object placed on the "Ignore Raycast" layer rather
+    /// than on the slope itself. The slope sits on the Ground layer, and the player's
+    /// ground check queries that layer and (by default) hits triggers — so a slab on
+    /// the slope would read as solid ground metres above the surface, keeping the
+    /// player "grounded" in mid-air and blocking the dive. Off the ground layer, the
+    /// ground check ignores the slab while the slope's own solid collider still
+    /// registers as ground when actually standing on it.
     /// </summary>
     private void BuildTriggerSlab()
     {
@@ -44,10 +52,20 @@ public class SlopeSlide : MonoBehaviour
         else
             local = new Bounds(Vector3.zero, Vector3.one);
 
-        BoxCollider trigger = gameObject.AddComponent<BoxCollider>();
+        GameObject slab = new GameObject("SlopeSlideTrigger");
+        slab.layer = LayerMask.NameToLayer("Ignore Raycast");
+        // Parent without keeping world position so the child shares the slope's
+        // local space; the collider bounds below are expressed in that space.
+        slab.transform.SetParent(transform, false);
+
+        BoxCollider trigger = slab.AddComponent<BoxCollider>();
         trigger.isTrigger = true;
         trigger.center = local.center + Vector3.up * (_slabHeight * 0.5f);
         trigger.size = new Vector3(local.size.x, local.size.y + _slabHeight, local.size.z);
+
+        // The trigger lives on the child, so its OnTrigger callbacks land there too.
+        // Relay them back to this component, which owns the push logic and tunables.
+        slab.AddComponent<SlopeSlideRelay>().Owner = this;
     }
 
     private Vector3 Downhill()
@@ -56,7 +74,11 @@ public class SlopeSlide : MonoBehaviour
         return Vector3.ProjectOnPlane(Vector3.down, transform.up).normalized;
     }
 
-    void OnTriggerStay(Collider other)
+    /// <summary>
+    /// Pushes whatever sits in the trigger slab down the slope. Invoked every frame
+    /// by the child <see cref="SlopeSlideRelay"/> that owns the trigger collider.
+    /// </summary>
+    public void ApplySlide(Collider other)
     {
         Vector3 downhill = Downhill();
         if (downhill.sqrMagnitude < 0.0001f)
@@ -74,5 +96,22 @@ public class SlopeSlide : MonoBehaviour
         Rigidbody body = other.attachedRigidbody;
         if (body != null && !body.isKinematic)
             body.AddForce(downhill * _itemForce, ForceMode.Acceleration);
+    }
+}
+
+/// <summary>
+/// Sits on the trigger-slab child object built by <see cref="SlopeSlide"/> and
+/// forwards its trigger callbacks to the parent. The slab is kept on a child (on a
+/// non-ground layer) so the player's ground check can't mistake it for solid ground,
+/// which means the trigger messages arrive here rather than on the SlopeSlide itself.
+/// </summary>
+public class SlopeSlideRelay : MonoBehaviour
+{
+    public SlopeSlide Owner;
+
+    void OnTriggerStay(Collider other)
+    {
+        if (Owner != null)
+            Owner.ApplySlide(other);
     }
 }
